@@ -1,0 +1,19 @@
+goos: linux
+goarch: amd64
+pkg: github.com/ldsec/lattigo/v2/ckks/bootstrapping
+cpu: Intel(R) Xeon(R) Gold 6230R CPU @ 2.10GHz
+BenchmarkLevelConserved
+unmarshall sk
+unmarshall rlk
+unmarshall rtk
+BenchmarkLevelConserved/LevelConservedlogN=16/LogSlots=15/logQP=1530/levels=25/a=5/b=5
+    bootstrap_bench_test.go:253: After LinearTransform 0 : 6.798067165s 24 4.503599627370496e+15
+    bootstrap_bench_test.go:259: After LinearTransform 1 : 3.408924417s 24 4.503599627370496e+15
+    bootstrap_bench_test.go:264: After Resclaing 1 : 51.477748ms 24 4.503599627370496e+15
+    bootstrap_bench_test.go:259: After LinearTransform 2 : 3.184683829s 24 4.503599627370496e+15
+    bootstrap_bench_test.go:264: After Resclaing 2 : 47.765962ms 24 4.503599627370496e+15
+    bootstrap_bench_test.go:259: After LinearTransform 3 : 2.339352907s 24 4.503599627370496e+15
+    bootstrap_bench_test.go:264: After Resclaing 3 : 46.233008ms 24 4.503599627370496e+15
+BenchmarkLevelConserved/LevelConservedlogN=16/LogSlots=15/logQP=1530/levels=25/a=5/b=5-104         	       1	15877479166 ns/op
+PASS
+ok  	github.com/ldsec/lattigo/v2/ckks/bootstrapping	87.126s
