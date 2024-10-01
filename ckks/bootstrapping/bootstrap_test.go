@@ -57,6 +57,9 @@ func TestRescaling(t *testing.T) {
 		ckksParams.LogSlots = 12
 		prefix = fmt.Sprintf("param%d-short/", paramSet+1)
 	}
+	if err := os.MkdirAll(prefix, os.ModePerm); err != nil {
+		panic(err)
+	}
 
 	params, err := ckks.NewParametersFromLiteral(ckksParams)
 	if err != nil {

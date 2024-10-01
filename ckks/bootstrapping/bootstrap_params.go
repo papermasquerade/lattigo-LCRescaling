@@ -791,26 +791,20 @@ var LevelConservedCKKSParameters = []ckks.ParametersLiteral{
 		Sigma:        rlwe.DefaultSigma,
 		Q: []uint64{
 			0x10000000006e0001, // 60 Q0
-			0x10000140001,      // 40+
-			0xffffe80001,       // 40-
-			0xffffc40001,       // 40-
-			0x100003e0001,      // 40+
-			0xffffb20001,       // 40-
-			0x10000500001,      // 40+
-			0xffff940001,       // 40-
-			0xffff8a0001,       // 40-
-			0xffff820001,       // 40-
-			0x10000960001,      // 40 +
+			0x10000140001,      // 40
+			0xffffe80001,       // 40
+			0xffffc40001,       // 40
+			0x100003e0001,      // 40
+			0xffffb20001,       // 40
+			0x10000500001,      // 40
+			0xffff940001,       // 40
+			0xffff8a0001,       // 40
+			0xffff820001,       // 40
+			0x10000960001,      // 40+
 
-			// 0x1ffffb60001, // 41 StC
-			// 0x1ffffd80001,
-			// 0x1ffffea0001,
-			0x7fffe60001, // 39 StC
-			0x7fffe40001, // 39 StC
-			0x7fffe00001, // 39 StC
-			// 0xfffffc60001,      // 44 stc
-			// 0xfffffac0001,      // 44 stc
-			// 0xfffff960001,      // 44 stc
+			0x7fffe60001,       // 39 StC
+			0x7fffe40001,       // 39 StC
+			0x7fffe00001,       // 39 StC
 			0xfffffffff840001,  // 60 Sine (double angle)
 			0x1000000000860001, // 60 Sine (double angle)
 			0xfffffffff6a0001,  // 60 Sine
@@ -819,26 +813,9 @@ var LevelConservedCKKSParameters = []ckks.ParametersLiteral{
 			0x1000000000b00001, // 60 Sine
 			0x1000000000ce0001, // 60 Sine
 			0xfffffffff2a0001,  // 60 Sine
-
-			// 0x8000000004a0001, // 59 CtS
-			// 0x7ffffffffcc0001,
-			// 0x7ffffffffba0001,
-			//
-			// 0x200000000e0001, // 53 CtS
-			// 0x1fffffffd80001,
-			// 0x1fffffffb60001,
-
-			// 0x10000001a0001, // 48 CtS
-			// 0xfffffffa0001,  // 48 CtS
-			// 0xfffffff00001,  // 48 CtS
-
-			// 0x7fffffffba0001, // 55 CtS
-			// 0x7fffffffaa0001,
-			// 0x7fffffff7e0001,
-
-			0x100000000060001, // 56 CtS
-			0xfffffffff00001,  // 56 CtS
-			0xffffffffd80001,  // 56 CtS
+			0x100000000060001,  // 56 CtS
+			0xfffffffff00001,   // 56 CtS
+			0xffffffffd80001,   // 56 CtS
 			// freed
 			// 0x1000000002a0001,  // 56 CtS
 		},
