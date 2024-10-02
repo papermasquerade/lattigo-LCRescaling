@@ -8,6 +8,7 @@ Codes are based on [Lattigo v2.4.0](https://github.com/tuneinsight/lattigo/tree/
   2. The very last modulus of `Q []uint64` in `LevelConservedCKKSParameters` is commented out, as the level-conserved rescaling requires one-less moduli for coeffs-to-slots. Additionally, another modulus is inserted right after the moduli for slots-to-coeffs.
   3. The last modulus in `CoeffsToSlotsParameters.ScalingFactor [][]Float64` is replaced with the penultimate one, for that such modulus is applied twice as level is conserved.
 - Implementations for Level-Conserved Rescaling
+- Implementations for Aggregated Key-Swiching
 - Tests
   In `ckks/bootstrapping/bootstrap_test.go`, a function named `TestRescaling` is added.
 
