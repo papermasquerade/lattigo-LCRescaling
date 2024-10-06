@@ -590,16 +590,16 @@ func (keygen *keyGenerator) genSwitchingKeyApplyFunc(skIn *ring.Poly, skOut Poly
 		// a (since a is uniform, we consider we already sample it in the NTT and Montgomery domain)
 		keygen.uniformSamplerQ.ReadLvl(levelQ, swk.Value[i][1].Q)
 		keygen.uniformSamplerP.ReadLvl(levelP, swk.Value[i][1].P)
-		for _, vec := range swk.Value[i][1].Q.Coeffs {
-			for i := range vec {
-				vec[i] = 0
-			}
-		}
-		for _, vec := range swk.Value[i][1].P.Coeffs {
-			for i := range vec {
-				vec[i] = 0
-			}
-		}
+		// for _, vec := range swk.Value[i][1].Q.Coeffs {
+		// 	for i := range vec {
+		// 		vec[i] = 0
+		// 	}
+		// }
+		// for _, vec := range swk.Value[i][1].P.Coeffs {
+		// 	for i := range vec {
+		// 		vec[i] = 0
+		// 	}
+		// }
 
 		// e + (skIn * P) * (q_star * q_tild) mod QP
 		//
