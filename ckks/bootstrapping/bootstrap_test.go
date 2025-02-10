@@ -7,6 +7,7 @@ import (
 	"math"
 	"os"
 	"runtime"
+	"time"
 
 	"testing"
 
@@ -17,7 +18,7 @@ import (
 )
 
 var p = fmt.Println
-var flagLongTest = flag.Bool("long", false, "run the long test suite (all parameters + secure bootstrapping). Overrides -short and requires -timeout=0.")
+var flagLongTest = flag.Bool("long", true, "run the long test suite (all parameters + secure bootstrapping). Overrides -short and requires -timeout=0.")
 var testBootstrapping = flag.Bool("test-bootstrapping", true, "run the bootstrapping tests (memory intensive)")
 var printPrecisionStats = flag.Bool("print-precision", true, "print precision stats")
 
@@ -283,7 +284,7 @@ func TestBootstrap(t *testing.T) {
 		t.Skip("skipping bootstrapping tests (add -test-bootstrapping to run the bootstrapping tests)")
 	}
 
-	paramSet := 3
+	paramSet := 0
 
 	ckksParams := DefaultCKKSParameters[paramSet]
 	bootstrapParams := DefaultParameters[paramSet]
@@ -384,16 +385,11 @@ func testbootstrap(params ckks.Parameters, btpParams Parameters, t *testing.T) {
 			}
 		}
 
-		// var wg sync.WaitGroup
-		// wg.Add(1)
 		for i := range ciphertexts {
-			// go func(index int) {
+			now := time.Now()
 			ciphertexts[i] = bootstrappers[i].Bootstrapp(ciphertexts[i])
-			//btp.SetScale(ciphertexts[index], params.Scale())
-			// wg.Done()
-			// }(i)
+			fmt.Println("Real Time: ", time.Since(now))
 		}
-		// wg.Wait()
 
 		for i := range ciphertexts {
 			verifyTestVectors(params, encoder, decryptor, values, ciphertexts[i], params.LogSlots(), 0, t)
