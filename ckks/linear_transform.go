@@ -546,16 +546,18 @@ func (eval *evaluator) LinearTransformWithPrecomputedMatRotKeys(ctIn *Ciphertext
 
 	case LinearTransform:
 		minLevel := utils.MinInt(LTs.Level, ctIn.Level())
-		// fmt.Println("lvl c1:", ctIn.Level())
-		// fmt.Println("Value c1:")
-		// eval.RingQ().PrintHeadNTT(ctIn.Value[1], 3)
+
 		eval.DecomposeNTT(minLevel, eval.params.PCount()-1, eval.params.PCount(), ctIn.Value[1], eval.PoolDecompQP)
 		idx, _, _ := BsgsIndex(LTs.Vec, 1<<LTs.LogSlots, LTs.N1)
-		// fmt.Println("LTs.N1:", LTs.N1, " --> idx", idx)
+
 		if LTs.N1 == 0 {
 			eval.MultiplyByDiagMatrix(ctIn, LTs, eval.PoolDecompQP, ctOut[0])
 		} else {
+
 			if len(idx) == 1 {
+				// forced the entire btp process to discard BSGS for simplicity
+				// when benchmarking, all but CoeffToSlots are tested on the original Lattigo library
+
 				// eval.MultiplyByDiagMatrix(ctIn, LTs, eval.PoolDecompQP, ctOut[0])
 				eval.MultiplyByDiagMatrixPrecomputed(ctIn, LTs, key, eval.PoolDecompQP, ctOut[0], levelFree)
 			} else {
