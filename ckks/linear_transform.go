@@ -2,6 +2,8 @@ package ckks
 
 import (
 	"fmt"
+	"math/big"
+
 	// "math"
 	"runtime"
 	"time"
@@ -547,22 +549,48 @@ func (eval *evaluator) LinearTransformWithPrecomputedMatRotKeys(ctIn *Ciphertext
 	case LinearTransform:
 		minLevel := utils.MinInt(LTs.Level, ctIn.Level())
 
-		eval.DecomposeNTT(minLevel, eval.params.PCount()-1, eval.params.PCount(), ctIn.Value[1], eval.PoolDecompQP)
-		idx, _, _ := BsgsIndex(LTs.Vec, 1<<LTs.LogSlots, LTs.N1)
+		// idx, _, _ := BsgsIndex(LTs.Vec, 1<<LTs.LogSlots, LTs.N1)
+		if levelFree {
+			coeffsBig := make([]*big.Int, (eval.params.N()))
+			for i := range coeffsBig {
+				coeffsBig[i] = big.NewInt(0)
+			}
+
+			ringQ := eval.RingQ()
+			pool := ringQ.NewPolyLvl(ctIn.Value[1].Level())
+			// ringQ.InvNTT(eval.PoolDecompQP[0].Q, pool)
+			ringQ.InvNTTLvl(ctIn.Value[1].Level(), ctIn.Value[1], pool)
+			ringQ.PolyToBigintCenteredLvl(ctIn.Value[1].Level(), pool, coeffsBig)
+
+			ringP := eval.RingP()
+			poolP := ringP.NewPoly()
+			eval.Baseconverter.ModUpQtoP(pool.Level(), poolP.Level(), pool, poolP)
+			ringQ.NTT(pool, pool)
+			ringP.NTT(poolP, poolP)
+
+			eval.PoolDecompQP[0] = rlwe.PolyQP{Q: pool, P: poolP}
+
+			// eval.DecomposeNTT(minLevel, eval.params.PCount()-1, eval.params.PCount(), ctIn.Value[1], eval.PoolDecompQP)
+
+		} else {
+			eval.DecomposeNTT(minLevel, eval.params.PCount()-1, eval.params.PCount(), ctIn.Value[1], eval.PoolDecompQP)
+		}
 
 		if LTs.N1 == 0 {
 			eval.MultiplyByDiagMatrix(ctIn, LTs, eval.PoolDecompQP, ctOut[0])
 		} else {
+			// WARNING: the BSGS ratio should be large enough so all the rotation indices are compuated
+			eval.MultiplyByDiagMatrixPrecomputed(ctIn, LTs, key, eval.PoolDecompQP, ctOut[0], levelFree)
 
-			if len(idx) == 1 {
-				// forced the entire btp process to discard BSGS for simplicity
-				// when benchmarking, all but CoeffToSlots are tested on the original Lattigo library
+			// if len(idx) == 1 {
+			// 	// forced the entire btp process to discard BSGS for simplicity
+			// 	// when benchmarking, all but CoeffToSlots are tested on the original Lattigo library
 
-				// eval.MultiplyByDiagMatrix(ctIn, LTs, eval.PoolDecompQP, ctOut[0])
-				eval.MultiplyByDiagMatrixPrecomputed(ctIn, LTs, key, eval.PoolDecompQP, ctOut[0], levelFree)
-			} else {
-				eval.MultiplyByDiagMatrixBSGS(ctIn, LTs, eval.PoolDecompQP, ctOut[0])
-			}
+			// 	// eval.MultiplyByDiagMatrix(ctIn, LTs, eval.PoolDecompQP, ctOut[0])
+
+			// } else {
+			// 	eval.MultiplyByDiagMatrixBSGS(ctIn, LTs, eval.PoolDecompQP, ctOut[0])
+			// }
 		}
 	}
 }
@@ -1123,7 +1151,7 @@ func (eval *evaluator) MultiplyByDiagMatrixBSGS(ctIn *Ciphertext, matrix LinearT
 
 func (eval *evaluator) MultiplyByDiagMatrixPrecomputed(ctIn *Ciphertext, matrix LinearTransform, matRotKey *rlwe.RotationKeySet, PoolDecompQP []rlwe.PolyQP, ctOut *Ciphertext, levelFree bool) {
 
-	// fmt.Println("ctlevel:", ctIn.Level(), "matrixlevel:", matrix.Level, "outlevel:", ctOut.Level(), "matrix scale:", matrix.Scale)
+	// fmt.Println("ctlevel:", ctIn.Level(), "matrixlevel:", matrix.Level, "outlevel:", ctOut.Level(), "matrix scale:", matrix.Scale, "islevelFree:", levelFree)
 	ringQ := eval.params.RingQ()
 	ringP := eval.params.RingP()
 	ringQP := rlwe.RingQP{RingQ: ringQ, RingP: ringP}
@@ -1230,6 +1258,20 @@ func (eval *evaluator) MultiplyByDiagMatrixPrecomputed(ctIn *Ciphertext, matrix 
 					eval.levelFreeAuxCt[galEl], ksRes0QP.Q, ksRes1QP.Q, ksRes0QP.P, ksRes1QP.P)
 				// ringQP.PrintHeadNTT(ksRes0QP, 3)
 				// ringQP.PrintHeadNTT(ksRes1QP, 3)
+				// {
+				// 	pool := ringQ.NewPoly()
+				// 	coeffsBig := make([]*big.Int, eval.params.N())
+				// 	for i := range coeffsBig {
+				// 		coeffsBig[i] = big.NewInt(0)
+				// 	}
+				// 	ringQ.InvNTT(ksRes0QP.Q, pool)
+				// 	ringQ.PolyToBigintCenteredLvl(pool.Level(), pool, coeffsBig)
+				// 	fmt.Println("ksRes0QP.Q, ", coeffsBig[:5])
+				// 	ringQ.InvNTT(ksRes1QP.Q, pool)
+				// 	ringQ.PolyToBigintCenteredLvl(pool.Level(), pool, coeffsBig)
+				// 	fmt.Println("ksRes1QP.Q, ", coeffsBig[:5])
+
+				// }
 
 			} else {
 				rtk, generated := matRotKey.Keys[galEl]
@@ -1364,7 +1406,9 @@ func (eval *evaluator) MultiplyByDiagMatrixPrecomputed(ctIn *Ciphertext, matrix 
 		// c1OutQP.Q.Coeffs = c1OutQP.Q.Coeffs[:level]
 		//
 		// fmt.Println(ctOut.Level(), levelQ)
-		ctOut.Scale = matrix.Scale * ctIn.Scale / (float64(ringQ.Modulus[levelQ]))
+		// ================== Rescale ==================
+		// ctOut.Scale = matrix.Scale * ctIn.Scale / (float64(ringQ.Modulus[levelQ]))
+		// =============================================
 
 		// fmt.Println(
 		// 	"matrix.Scale:", math.Log2(matrix.Scale),

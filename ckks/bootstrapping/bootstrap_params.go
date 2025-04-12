@@ -246,11 +246,11 @@ var DefaultCKKSParameters = []ckks.ParametersLiteral{
 			0xffff940001,
 			0xffff8a0001,
 			0xffff820001,
-			0x10000960001, // 40+
+			// 0x10000960001, // 40+
 
-			0xfffffffff00001,  // 56 CtS
-			0x100000000060001, // 56 StC (28 + 28)
-			// 0xffa0001,          // 28 StC
+			// 0xfffffffff00001,  // 56 CtS
+			0x100000000060001,  // 56 StC (28 + 28)
+			0xffa0001,          // 28 StC
 			0xffffffffffc0001,  // 60 Sine (double angle)
 			0x10000000006e0001, // 60 Sine (double angle)
 			0xfffffffff840001,  // 60 Sine (double angle)
@@ -432,10 +432,10 @@ var DefaultParameters = []Parameters{
 	// Set IV
 	// 1792
 	{
-		H: 32768,
+		H: 192,
 		SlotsToCoeffsParameters: advanced.EncodingMatrixLiteral{
 			LinearTransformType: advanced.SlotsToCoeffs,
-			LevelStart:          12,
+			LevelStart:          11,
 			BSGSRatio:           2.0,
 			BitReversed:         false,
 			ScalingFactor: [][]float64{
@@ -445,7 +445,7 @@ var DefaultParameters = []Parameters{
 		},
 		EvalModParameters: advanced.EvalModLiteral{
 			Q:             0x4000000120001,
-			LevelStart:    24,
+			LevelStart:    23,
 			SineType:      advanced.Cos2,
 			MessageRatio:  256.0,
 			K:             325,
@@ -456,7 +456,7 @@ var DefaultParameters = []Parameters{
 		},
 		CoeffsToSlotsParameters: advanced.EncodingMatrixLiteral{
 			LinearTransformType: advanced.CoeffsToSlots,
-			LevelStart:          28,
+			LevelStart:          27,
 			BSGSRatio:           2.0,
 			BitReversed:         false,
 			ScalingFactor: [][]float64{
@@ -547,26 +547,6 @@ var LevelConservedParameters = []Parameters{
 			LevelConserved:      true,
 			BitReversed:         false,
 			ScalingFactor: [][]float64{
-				// {0x8000000004a0001}, // 59 CtS
-				// {0x7ffffffffcc0001},
-				// {0x7ffffffffba0001},
-				// {0x7ffffffffba0001},
-
-				// {0x200000000e0001}, // 53 CtS
-				// {0x1fffffffd80001},
-				// {0x1fffffffb60001},
-				// {0x1fffffffb60001},
-
-				// {0x10000001a0001}, // 48 CtS
-				// {0xfffffffa0001},  // 48 CtS
-				// {0xfffffff00001},  // 48 CtS
-				// {0xfffffff00001},  // 48 CtS
-
-				// {0x7fffffffba0001}, // 55 CtS
-				// {0x7fffffffaa0001},
-				// {0x7fffffff7e0001},
-				// {0x7fffffff7e0001},
-
 				{0x100000000060001},
 				{0xfffffffff00001}, // q_{l-2}
 				{0xffffffffd80001}, // q_{l-1}
@@ -664,10 +644,10 @@ var LevelConservedParameters = []Parameters{
 		},
 	},
 	{
-		H: 192,
+		H: 32768,
 		SlotsToCoeffsParameters: advanced.EncodingMatrixLiteral{
 			LinearTransformType: advanced.SlotsToCoeffs,
-			LevelStart:          11,
+			LevelStart:          12,
 			BSGSRatio:           2.0,
 			BitReversed:         false,
 			ScalingFactor: [][]float64{
@@ -677,7 +657,7 @@ var LevelConservedParameters = []Parameters{
 		},
 		EvalModParameters: advanced.EvalModLiteral{
 			Q:             0x4000000120001,
-			LevelStart:    23,
+			LevelStart:    24,
 			SineType:      advanced.Cos2,
 			MessageRatio:  256.0,
 			K:             325,
@@ -688,9 +668,9 @@ var LevelConservedParameters = []Parameters{
 		},
 		CoeffsToSlotsParameters: advanced.EncodingMatrixLiteral{
 			LinearTransformType: advanced.CoeffsToSlots,
-			LevelStart:          26,
+			LevelStart:          27,
 			LevelConserved:      true,
-			BSGSRatio:           2.0,
+			BSGSRatio:           128.0, // should be large to force avoiding BSGS
 			BitReversed:         false,
 			ScalingFactor: [][]float64{
 				{0x200000000e0001},
@@ -705,8 +685,7 @@ var LevelConservedParameters = []Parameters{
 	// Set IV
 	// 1792
 	{
-		// H: 32768,
-		H: 192,
+		H: 32768,
 		SlotsToCoeffsParameters: advanced.EncodingMatrixLiteral{
 			LinearTransformType: advanced.SlotsToCoeffs,
 			LevelStart:          11,
@@ -923,9 +902,9 @@ var LevelConservedCKKSParameters = []ckks.ParametersLiteral{
 			0xffff940001,
 			0xffff8a0001,
 			0xffff820001,
-			// 0x10000960001, // 40+
-			//
-			// 0xfffffffff00001,  // 56 CtS
+
+			0x10000960001, // 40+
+
 			0x100000000060001,  // 56 StC (28 + 28)
 			0xffa0001,          // 28 StC
 			0xffffffffffc0001,  // 60 Sine (double angle)
@@ -943,7 +922,7 @@ var LevelConservedCKKSParameters = []ckks.ParametersLiteral{
 			0x200000000e0001,   // 53 CtS
 			0x20000000140001,   // 53 CtS
 			0x20000000280001,   // 53 CtS
-			0x1fffffffd80001,   // 53 CtS
+			// 0x1fffffffd80001,   // 53 CtS
 		},
 		P: []uint64{
 			0x1fffffffffe00001, // Pi 61

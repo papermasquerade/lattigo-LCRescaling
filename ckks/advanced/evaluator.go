@@ -272,6 +272,22 @@ func (eval *evaluator) dftPrecomputed(ctIn *ckks.Ciphertext, plainVectors []ckks
 	scale := ctIn.Scale
 	var in, out *ckks.Ciphertext
 	// fmt.Println("before dft, level:", ctIn.Level())
+	// for i, plainVector := range plainVectors {
+	// 	in, out = ctOut, ctOut
+	// 	if i == 0 {
+	// 		in, out = ctIn, ctOut
+	// 	}
+	// 	// fmt.Println("before lineartransform:", out.Level())
+	// 	eval.LinearTransform(in, plainVector, []*ckks.Ciphertext{out})
+	// 	// fmt.Println("before rescaling")
+	// 	if err := eval.Rescale(out, scale, out); err != nil {
+	// 		panic(err)
+	// 	}
+
+	// 	// fmt.Println("i:", i, "level:", out.Level())
+	// }
+
+	// return
 	for i, plainVector := range plainVectors {
 		in, out = ctOut, ctOut
 		if i == 0 {
@@ -279,13 +295,51 @@ func (eval *evaluator) dftPrecomputed(ctIn *ckks.Ciphertext, plainVectors []ckks
 		}
 
 		if i == 0 {
-			// fmt.Println("Level Free Modulus Performed")
+
+			// ringQ := eval.params.RingQ()
+			// levelQ := in.Level()
+
+			// coeffsBig := make([]*big.Int, eval.params.N())
+			// for i := range coeffsBig {
+			// 	coeffsBig[i] = big.NewInt(0)
+			// }
+
+			// ringQ.InvNTT(in.Value[1], in.Value[1])
+			// ringQ.PolyToBigintCenteredLvl(levelQ, in.Value[1], coeffsBig)
+			// ringQ.NTT(in.Value[1], in.Value[1])
+			// fmt.Println("in former several coeffs, ", coeffsBig[:5])
+			// // fmt.Println("Level Free Modulus Performed")
+			// eval.LinearTransformWithPrecomputedMatRotKeys(in, plainVector,
+			// 	nil,
+			// 	[]*ckks.Ciphertext{out}, true)
+			// // eval.LinearTransformWithPrecomputedMatRotKeys(in, plainVector, eval.MatRotKeys(i), []*ckks.Ciphertext{out}, false)
+			// // eval.LinearTransform(in, plainVector, []*ckks.Ciphertext{out})
+
+			// ringQ.InvNTT(out.Value[1], out.Value[1])
+			// ringQ.PolyToBigintCenteredLvl(levelQ, out.Value[1], coeffsBig)
+			// ringQ.NTT(out.Value[1], out.Value[1])
+
+			// fmt.Println("former several coeffs, ", coeffsBig[:5])
+
+			// if err := eval.RescaleNoDiv(out, scale, out); err != nil {
+			// 	panic(err)
+			// }
+			// // if err := eval.Rescale(out, scale, out); err != nil {
+			// // 	panic(err)
+			// // }
+
+			// continue
 			eval.LinearTransformWithPrecomputedMatRotKeys(in, plainVector,
 				// eval.MatRotKeys(i),
 				nil,
 				[]*ckks.Ciphertext{out}, true)
+
+			if err := eval.RescaleNoDiv(out, scale, out); err != nil {
+				panic(err)
+			}
 		} else {
 			eval.LinearTransformWithPrecomputedMatRotKeys(in, plainVector, eval.MatRotKeys(i), []*ckks.Ciphertext{out}, false)
+			// eval.LinearTransform(in, plainVector, []*ckks.Ciphertext{out})
 
 			if err := eval.Rescale(out, scale, out); err != nil {
 				panic(err)

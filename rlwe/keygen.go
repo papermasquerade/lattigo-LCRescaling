@@ -693,8 +693,14 @@ func (keygen *keyGenerator) GenCorrectionPartForRotationKey(
 	halfqL := big.NewInt(0)
 	halfqL.Rsh(bigqL, 1)
 
+	halfQL := big.NewInt(0)
+	halfQL.Rsh(Q, 1)
 	// delta := math.Log2(float64(ringP.Modulus[levelP])) - math.Log2(float64(ringQ.Modulus[levelQ]))
 	for i := range bigMPSQ {
+		if bigMPSQ[i].CmpAbs(halfQL) == 1 {
+			panic("coeffs is greater than QL/2")
+		}
+
 		// P_{k-1} * S * M
 
 		// bigMPSQ[i].Mul(bigMPSQ[i], big.NewInt(72057594037538816))
@@ -711,7 +717,7 @@ func (keygen *keyGenerator) GenCorrectionPartForRotationKey(
 		// bigMPSQ[i].Div(bigMPSQ[i], ring.NewUint(0x1000000002a0001-3141632))
 
 		tmp.Mod(bigMPSQ[i], bigqL)
-		if tmp.Cmp(halfqL) >= 0 {
+		if tmp.Cmp(halfqL) > 0 {
 			tmp.Sub(tmp, bigqL)
 		}
 		bigMPSQ[i].Sub(bigMPSQ[i], tmp)

@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"math"
+	"math/big"
 	"os"
 	"runtime"
 	"time"
@@ -46,7 +47,8 @@ func TestBootstrapParametersMarshalling(t *testing.T) {
 }
 
 func TestRescaling(t *testing.T) {
-	paramSet := 0
+	paramSet := 3
+
 	ckksParams := LevelConservedCKKSParameters[paramSet]
 	bootstrapParams := LevelConservedParameters[paramSet]
 	// ckksParams := DefaultCKKSParameters[paramSet]
@@ -207,7 +209,7 @@ func TestRescaling(t *testing.T) {
 		encoder.Encode(values, plaintext, params.LogSlots())
 		fmt.Println("default scale:", params.DefaultScale())
 		ciphertexts := encryptor.EncryptNew(plaintext)
-		var ctL, ctL1, ctLfree, ct0 *ckks.Ciphertext
+		var ctL, ct0 *ckks.Ciphertext
 
 		ct0 = ciphertexts.CopyNew()
 		for ct0.Level() > 1 {
@@ -229,29 +231,47 @@ func TestRescaling(t *testing.T) {
 		ctL = ct0.CopyNew()
 		ctL = btp.modUpFromQ0(ctL)
 		fmt.Println("ct level:", ctL.Level())
+		{
+			ringQ := params.RingQ()
+			ringQ.InvNTT(ctL.Value[1], ctL.Value[1])
+			coeffsBig := make([]*big.Int, btp.params.N())
+			for i := range coeffsBig {
+				coeffsBig[i] = big.NewInt(0)
+			}
 
-		fmt.Println(" ================== Rescaling ============")
-		ctL1 = ctL.CopyNew()
-		fmt.Println("ct scale:", ctL1.Scale)
-		btp.MultByConst(ctL1, btp.params.RingQ().Modulus[ctL1.Level()], ctL1)
-		minScale := ctL1.Scale
-		ctL1.Scale *= float64(btp.params.RingQ().Modulus[ctL1.Level()])
-		if err := btp.Rescale(ctL1, minScale, ctL1); err != nil {
-			panic(err)
+			ringQ.PolyToBigintCenteredLvl(ctL.Level(), ctL.Value[1], coeffsBig)
+			ringQ.NTT(ctL.Value[1], ctL.Value[1])
+			fmt.Println("ctL: ", coeffsBig[:3])
 		}
 
-		fmt.Println(" ================= Re-ModUP ===============")
-		ctLfree = ctL1.CopyNew()
-		// ctLfree = btp.modUpFromQl1(ctLfree)
-		for u := range ctLfree.Value {
-			params.RingQ().ModupFromQLMinus1(ctLfree.Value[u], btp.params.MaxLevel(), btp.params.N())
+		if (btp.evalModPoly.ScalingFactor()/btp.evalModPoly.MessageRatio())/ctL.Scale > 1 {
+			fmt.Println("low evalmod scaling factor, scale it up")
+			btp.ScaleUp(ctL, math.Round((btp.evalModPoly.ScalingFactor()/btp.evalModPoly.MessageRatio())/ctL.Scale), ctL)
 		}
 
-		fmt.Println("after level-free rescaling level:", ctLfree.Level())
-		ptL := decryptor.DecryptNew(ctL)
-		valuesL := encoder.Decode(ptL, params.LogSlots())
+		// var ctL1, ctLfree
+		// fmt.Println(" ================== Rescaling ============")
+		// ctL1 = ctL.CopyNew()
+		// fmt.Println("ct scale:", ctL1.Scale)
+		// btp.MultByConst(ctL1, btp.params.RingQ().Modulus[ctL1.Level()], ctL1)
+		// minScale := ctL1.Scale
+		// ctL1.Scale *= float64(btp.params.RingQ().Modulus[ctL1.Level()])
+		// if err := btp.Rescale(ctL1, minScale, ctL1); err != nil {
+		// 	panic(err)
+		// }
 
-		verifyTestVectors(params, encoder, decryptor, valuesL, ctLfree, params.LogSlots(), 0, t)
+		// fmt.Println(" ================= Re-ModUP ===============")
+		// ctLfree = ctL1.CopyNew()
+		// // ctLfree = btp.modUpFromQl1(ctLfree)
+		// for u := range ctLfree.Value {
+		// 	params.RingQ().ModupFromQLMinus1(ctLfree.Value[u], btp.params.MaxLevel(), btp.params.N())
+		// }
+
+		// fmt.Println("after level-free rescaling level:", ctLfree.Level())
+		// ptL := decryptor.DecryptNew(ctL)
+		// valuesL := encoder.Decode(ptL, params.LogSlots())
+
+		// verifyTestVectors(params, encoder, decryptor, valuesL, ctLfree, params.LogSlots(), 0, t)
 		fmt.Println(" ================ Coefficients to Slots =========")
 		/// expand this function
 		// ctReal, ctImag := btp.CoeffsToSlotsNew(ctL, btp.ctsMatrices)
@@ -284,16 +304,16 @@ func TestBootstrap(t *testing.T) {
 		t.Skip("skipping bootstrapping tests (add -test-bootstrapping to run the bootstrapping tests)")
 	}
 
-	paramSet := 0
+	paramSet := 3
 
 	ckksParams := DefaultCKKSParameters[paramSet]
 	bootstrapParams := DefaultParameters[paramSet]
 
 	// Insecure params for fast testing only
-	// if !*flagLongTest {
-	// 	ckksParams.LogN = 13
-	// 	ckksParams.LogSlots = 12
-	// }
+	if !*flagLongTest {
+		ckksParams.LogN = 13
+		ckksParams.LogSlots = 12
+	}
 
 	params, err := ckks.NewParametersFromLiteral(ckksParams)
 	// almost all literal, but polyQ, polyP computed for supporting computation with NTT

@@ -146,6 +146,7 @@ type Evaluator interface {
 	ScaleUp(ctIn *Ciphertext, scale float64, ctOut *Ciphertext)
 	SetScale(ctIn *Ciphertext, scale float64)
 	Rescale(ctIn *Ciphertext, minScale float64, ctOut *Ciphertext) (err error)
+	RescaleNoDiv(ctIn *Ciphertext, minScale float64, ctOut *Ciphertext) (err error)
 	DirectRescale(ctIn *Ciphertext, ctOut *Ciphertext) (err error)
 	ModupFromQLMinus1(ctIn *Ciphertext) (err error)
 
@@ -290,8 +291,6 @@ func (eval *evaluator) MergeCTSMatRotKeys(
 
 	eval.matRotKeys = make([]*rlwe.RotationKeySet, 0)
 	eval.levelFreeAuxCt = make(map[uint64][]rlwe.PolyQP)
-	// eval.levelFreeAuxCt1 = make([]rlwe.PolyQP, 0)
-	// eval.levelFreeAuxCt0 = make([]rlwe.PolyQP, 0)
 
 	lens := make([]int, 0)
 	for _, mat := range matrices {
@@ -1334,6 +1333,56 @@ func (eval *evaluator) Rescale(ctIn *Ciphertext, minScale float64, ctOut *Cipher
 	return nil
 }
 
+func (eval *evaluator) RescaleNoDiv(ctIn *Ciphertext, minScale float64, ctOut *Ciphertext) (err error) {
+
+	ringQ := eval.params.RingQ()
+
+	if minScale <= 0 {
+		return errors.New("cannot Rescale: minScale is 0")
+	}
+
+	if ctIn.Scale == 0 {
+		return errors.New("cannot Rescale: ciphertext scale is 0")
+	}
+
+	if ctIn.Level() == 0 {
+		return errors.New("cannot Rescale: input Ciphertext already at level 0")
+	}
+
+	if ctOut.Degree() != ctIn.Degree() {
+		return errors.New("cannot Rescale : ctIn.Degree() != ctOut.Degree()")
+	}
+
+	ctOut.Scale = ctIn.Scale
+
+	var nbRescales int
+	// Divides the scale by each moduli of the modulus chain as long as the scale isn't smaller than minScale/2
+	// or until the output Level() would be zero
+	// fmt.Println("testing:", ctOut.Scale, "/", ringQ.Modulus[ctIn.Level()], ">=", minScale, "/2")
+	for ctOut.Scale/float64(ringQ.Modulus[ctIn.Level()-nbRescales]) >= minScale/2 && ctIn.Level()-nbRescales >= 0 {
+
+		// fmt.Println("this way")
+		ctOut.Scale /= (float64(ringQ.Modulus[ctIn.Level()-nbRescales]))
+		nbRescales++
+	}
+
+	// if nbRescales > 0 {
+	// 	// fmt.Println("nbRescales > 0")
+	// 	level := ctIn.Level()
+	// 	for i := range ctOut.Value {
+	// 		ringQ.DivRoundByLastModulusManyNTTLvl(level, nbRescales, ctIn.Value[i], eval.poolQMul[0], ctOut.Value[i])
+	// 		ctOut.Value[i].Coeffs = ctOut.Value[i].Coeffs[:level+1-nbRescales]
+	// 	}
+	// } else {
+	// fmt.Println("nbRescales else")
+	if ctIn != ctOut {
+		ctOut.Copy(ctIn)
+	}
+	// }
+
+	return nil
+}
+
 // ctIn must be in NTT domain
 func (eval *evaluator) DirectRescale(ctIn *Ciphertext, ctOut *Ciphertext) (err error) {
 
@@ -1358,6 +1407,68 @@ func (eval *evaluator) DirectRescale(ctIn *Ciphertext, ctOut *Ciphertext) (err e
 
 	return nil
 }
+
+// func (eval *evaluator) ModupFromBottom(r *ring.Ring, poly *ring.Poly, maxlevel int) (err error) {
+// 	nowLevel := poly.Level()
+// 	poly.Coeffs = append(poly.Coeffs, make([][]uint64, maxlevel-nowLevel)...)
+// 	for i := nowLevel + 1; i < maxlevel+1; i++ {
+// 		poly.Coeffs[i] = make([]uint64, eval.params.N())
+// 	}
+
+// 	bredparams := r.BredParams
+// 	l := len(r.Modulus) - 1
+// 	ql := r.Modulus[l]
+// 	bredql := ring.BRedParams(ql)
+
+// 	var QL1 uint64 = 1
+// 	for _, qi := range r.Modulus[:l] {
+// 		QL1 = ring.BRed(QL1, qi, ql, bredql)
+// 	}
+
+// 	for coefi := 0; coefi < eval.params.N(); coefi++ {
+// 		var rL uint64 = 0
+// 		var z float64 = 0
+// 		// i for indexing RNS basis, i.e. levels
+// 		for i := 0; i < l; i++ {
+// 			var invQi uint64 = 1       // in Z_q0
+// 			var prodQiModQL uint64 = 1 // in Z_ql
+
+// 			qi := r.Modulus[i]
+// 			for j, qj := range r.Modulus {
+// 				if i == j || j == l {
+// 					continue
+// 				}
+// 				// prod_(j eq.not i) q_j mod q_i
+// 				invQi = ring.BRed(invQi, qj, qi, bredparams[i])
+
+// 				// prod_(j eq.not i) q_j mod q_L
+// 				prodQiModQL = ring.BRed(prodQiModQL, qj, ql, bredql)
+// 			}
+// 			invQi = ring.ModInv(invQi, qi)
+// 			invQi = ring.BRed(invQi, poly.Coeffs[i][coefi], qi, bredparams[i])
+
+// 			if invQi > (qi >> 1) {
+// 				z -= float64(qi-invQi) / float64(qi)
+// 				rL += ql - ring.BRed(prodQiModQL, qi-invQi, ql, bredql)
+// 			} else {
+// 				z += float64(invQi) / float64(qi)
+// 				rL += ring.BRed(prodQiModQL, invQi, ql, bredql)
+// 			}
+
+// 			rL = ring.BRedAdd(rL, ql, bredql)
+// 		}
+
+// 		z = math.Round(z)
+// 		if z < 0 {
+// 			rL += ring.BRed(QL1, uint64(-z), ql, bredql)
+// 		} else {
+// 			rL += ql - ring.BRed(QL1, uint64(z), ql, bredql)
+// 		}
+// 		poly.Coeffs[l][coefi] = ring.BRedAdd(rL, ql, bredql)
+// 	}
+
+// 	return nil
+// }
 
 func (eval *evaluator) ModupFromQLMinus1(ct *Ciphertext) (err error) {
 
