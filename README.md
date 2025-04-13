@@ -15,10 +15,11 @@ Codes are based on [Lattigo v2.4.0](https://github.com/tuneinsight/lattigo/tree/
 # Run Tests
 Change directory to `ckks/bootstrapping`, and run
 ```sh
-$ go test -v -run TestRescaling
+$ go test -v -run TestRescaling -timeout=30m
 ```
+If the key generation is not completed after it's timeout, run the command above again which will continue to generate key-switching keys.
 
-Till now, `paramSet` in `TestRescaling` at `ckks/bootstrapping/bootstrap_test.go` can be set to 0 to 2, as the experiments did in our paper.
+Till now, `paramSet` in `TestRescaling` at `ckks/bootstrapping/bootstrap_test.go` can be set to 0 to 3, as the experiments did in our paper. Further note that, to ensure the correctness of our level-conserved techniques, the `BSGSRatio` shoud be set to large (e.g. 128) to force avoiding BSGS.
 We recommend to run with the `flagLongTest` to be `false` in that test file, for faster evaluation. 
 
 Running tests will store key-swithcing keys at the current directory, which can be reused to run the same test multiple times.
